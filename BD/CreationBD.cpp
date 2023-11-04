@@ -69,25 +69,24 @@ int main(int argc,char *argv[])
   // Ajout de tuples dans la table utilisateurs
   printf("Ajout d'utilisateurs dans la table...\n");
 
-  sprintf(requete,"insert into utilisateurs values ('%s','%s');", "TEST", "12345");
+  sprintf(requete,"insert into utilisateurs values ('%s','%s');", "TEST", "1234567");
 
   mysql_query(connexion,requete);
   
-  // Création de la table factures
-  printf("Création de la table factures...\n");
-  mysql_query(connexion, "DROP TABLE IF EXISTS factures;"); // Supprime la table si elle existe déjà
-  mysql_query(connexion, "CREATE TABLE factures (id INT(4) AUTO_INCREMENT PRIMARY KEY, idClient INT(4), date DATE, montant FLOAT(4), paye BOOLEAN);");
+    // Creation d'une table factures
+  printf("Creation de la table factures...\n");
+  mysql_query(connexion,"drop table factures;"); // au cas ou elle existerait deja
+  mysql_query(connexion,"create table factures (idFacture INT(4) auto_increment primary key, idClient INT(4), dateFacture DATE, montant FLOAT, paye INT);");
 
-  // Création de la table ventes
-  printf("Création de la table ventes...\n");
-  mysql_query(connexion, "DROP TABLE IF EXISTS ventes;"); // Supprime la table si elle existe déjà
-  mysql_query(connexion, "CREATE TABLE ventes (idFacture INT(4), idArticle INT(4), quantite INT(4));");
-
+  // Creation d'une table ventes
+  printf("Creation de la table ventes...\n");
+  mysql_query(connexion,"drop table ventes;"); // au cas ou elle existerait deja
+  mysql_query(connexion,"create table ventes (idFacture INT(4), idArticle INT(4), quantite INT);");
+  
   // Ajout de clés étrangères
   printf("Ajout de clés étrangères...\n");
   mysql_query(connexion, "ALTER TABLE factures ADD FOREIGN KEY (idClient) REFERENCES clients(id);");
-  mysql_query(connexion, "ALTER TABLE ventes ADD FOREIGN KEY (idFacture) REFERENCES factures(id);");
-  mysql_query(connexion, "ALTER TABLE ventes ADD FOREIGN KEY (idArticle) REFERENCES articles(id);");
+
 
   // Deconnection de la BD
   mysql_close(connexion);

@@ -25,8 +25,9 @@ typedef struct
 
 ARTICLE articleCourant;
 ARTICLE Caddie[10];
-int nbArticles = 0;
+int nbArticles = 0,numFacture = 0;
 float totalCaddie = 0.0;
+bool logged = false;
 
 #define REPERTOIRE_IMAGES "ClientQt/images/"
 
@@ -311,6 +312,11 @@ void WindowClient::dialogueErreur(const char* titre,const char* message)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::closeEvent(QCloseEvent *event)
 {
+  if(logged == true)
+  {
+    on_pushButtonLogout_clicked();
+  } 
+  
   exit(0);
 }
 
@@ -376,11 +382,17 @@ void WindowClient::on_pushButtonLogin_clicked()
       if(isNouveauClientChecked() == 1) 
       {
         dialogueMessage("Login", "Inscription reussir!!!");
-      }  
+      } 
 
       dialogueMessage("Login", "Vous êtes connecté!!!");
 
       loginOK();
+
+      logged=true;
+
+      numFacture = atoi(strtok(NULL,"#"));
+
+      getCaddie();
 
       ConsultArticle(1);
     }
@@ -434,9 +446,23 @@ void WindowClient::on_pushButtonLogout_clicked()
 
     if (strcmp(reponse,"ok") == 0) 
     {
+      if(nbArticles != 0)
+      {
+        bool check;
+
+        check = VidePanier();
+        
+        if(check == true) 
+        {
+          printf("check vide\n");
+        }
+
+      }
       dialogueMessage("Logout", "Au plaisir!!!");
 
       logoutOK();
+
+      logged = false;
     }
   }
 }
@@ -552,6 +578,32 @@ void WindowClient::on_pushButtonAcheter_clicked()
           totalCaddie = totalCaddie + (Caddie[i].stock*Caddie[i].prix);
 
           setTotal(totalCaddie);
+          //mettre a jour le facture dans le BD
+          
+          sprintf(texte,"MISE_A_JOUR#%d#0#0#%.3f#%d#%d", numFacture, totalCaddie, articleCourant.id, getQuantite());
+
+          int nbEcrits;
+          if ((nbEcrits = Send(sClient,texte,strlen(texte))) == -1)
+          {
+            perror("Erreur de Send");
+            exit(1);
+          }
+
+          printf("NbEcrits = %d\n",nbEcrits);
+          printf("Ecrit = --%s--\n",texte);
+
+          char buffer[100];
+          int nbLus;
+            
+          if ((nbLus = Receive(sClient,buffer)) < 0)
+          {
+            perror("Erreur de Receive");
+            exit(1);
+          }
+            
+          printf("NbLus = %d\n",nbLus);
+          buffer[nbLus] = 0;
+          printf("Lu = --%s--\n",buffer);
 
           nbArticles++;
         }
@@ -574,6 +626,33 @@ void WindowClient::on_pushButtonAcheter_clicked()
           }
 
           setTotal(totalCaddie);
+          //mettre a jour le facture dans le BD
+          
+          sprintf(texte,"MISE_A_JOUR#%d#0#0#%.3f#%d#%d", numFacture, totalCaddie, articleCourant.id, getQuantite());
+
+          int nbEcrits;
+
+          if ((nbEcrits = Send(sClient,texte,strlen(texte))) == -1)
+          {
+            perror("Erreur de Send");
+            exit(1);
+          }
+
+          printf("NbEcrits = %d\n",nbEcrits);
+          printf("Ecrit = --%s--\n",texte);
+
+          char buffer[100];
+          int nbLus;
+            
+          if ((nbLus = Receive(sClient,buffer)) < 0)
+          {
+            perror("Erreur de Receive");
+            exit(1);
+          }
+            
+          printf("NbLus = %d\n",nbLus);
+          buffer[nbLus] = 0;
+          printf("Lu = --%s--\n",buffer);
         }
       }
     }
@@ -681,6 +760,31 @@ void WindowClient::on_pushButtonSupprimer_clicked()
         }
 
         setTotal(totalCaddie);
+        int nbEcrits;
+
+        if ((nbEcrits = Send(sClient,texte,strlen(texte))) == -1)
+        {
+          perror("Erreur de Send");
+
+          exit(1);
+        }
+
+        printf("NbEcrits = %d\n",nbEcrits);
+        printf("Ecrit = --%s--\n",texte);
+
+        char buffer[100];
+        int nbLus;
+        
+        if ((nbLus = Receive(sClient,buffer)) < 0)
+        {
+            perror("Erreur de Receive");
+            exit(1);
+        }
+        
+        printf("NbLus = %d\n",nbLus);
+        buffer[nbLus] = 0;
+        printf("Lu = --%s--\n",buffer);
+
       }
       else
       {
@@ -693,24 +797,23 @@ void WindowClient::on_pushButtonSupprimer_clicked()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonViderPanier_clicked()
 {
-  char texte[200];
-  sprintf(texte,"CANCEL_ALL#%d", nbArticles);
-  int nbEcrits;
+  bool check;
 
-  int i = 0;
-
-  while(i < 10 && Caddie[i].id != 0)
+  check = VidePanier();
+  
+  if(check == true) 
   {
-    char str[20];
 
-    strcat(texte, "#");
+    printf("check vide\n");
 
-    sprintf(str, "%d&%d", Caddie[i].id, Caddie[i].stock);
-
-    strcat(texte, str);
-
-    i++;
   }
+
+  char texte[200];
+
+  //mettre a jour le facture dans le BD
+  sprintf(texte,"DELETE_CAD#%d", numFacture);
+
+  int nbEcrits;
 
   if ((nbEcrits = Send(sClient,texte,strlen(texte))) == -1)
   {
@@ -734,17 +837,62 @@ void WindowClient::on_pushButtonViderPanier_clicked()
   buffer[nbLus] = 0;
   printf("Lu = --%s--\n",buffer);
   
-  
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void WindowClient::on_pushButtonPayer_clicked()
+{
+
+  if(nbArticles == 0)
+  {
+    dialogueErreur("Payer", "Votre panier est vide !");
+
+    return;
+  }
+
+  //printf("\nNom: %s\n\n", getNom());
+
+  char texte[100];
+
+  sprintf(texte,"CONFIRMER#%d#%s", numFacture, getNom());
+  int nbEcrits;
+
+  if ((nbEcrits = Send(sClient,texte,strlen(texte))) == -1)
+  {
+    perror("Erreur de Send");
+
+    exit(1);
+  }
+  printf("NbEcrits = %d\n",nbEcrits);
+  printf("Ecrit = --%s--\n",texte);
+
+  char buffer[100];
+
+  int nbLus;
+    
+  if ((nbLus = Receive(sClient,buffer)) < 0)
+  {
+    perror("Erreur de Receive");
+    exit(1);
+  }
+    
+  printf("NbLus = %d\n",nbLus);
+  buffer[nbLus] = 0;
+  printf("Lu = --%s--\n",buffer);
+
+
   char *ptr = strtok(buffer,"#");
 
-  if (strcmp(ptr,"CANCEL_ALL") == 0) 
+  if (strcmp(ptr,"CONFIRMER") == 0) 
   {
     char reponse[20];
+
     strcpy(reponse,strtok(NULL,"#"));
 
-    if (strcmp(reponse,"ko") == 0) 
+    if (strcmp(reponse,"-1") == 0) 
     {
-      dialogueErreur("Vider", "Votre panier est vide!!!");
+      dialogueErreur("Payer", "un problème est survenu!!");
     }
     else
     {
@@ -753,33 +901,25 @@ void WindowClient::on_pushButtonViderPanier_clicked()
       videTablePanier();
 
       totalCaddie = 0.0;
+
       setTotal(-1.0);
 
       int i = 0;
 
       while(i < nbArticles)
       {
-        if(Caddie[i].id == articleCourant.id)
-        {
-          articleCourant.stock += Caddie[i].stock;
-          setArticle(articleCourant.intitule, articleCourant.prix, articleCourant.stock , articleCourant.image);
-        }
-
         Caddie[i].id = 0;
 
         i++;
       }
 
       nbArticles = 0;
+
+      numFacture = atoi(reponse); //le nouveau numero de facture
+
+      dialogueMessage("Payer", "Achat confirmer!");
     }
   }
-  
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void WindowClient::on_pushButtonPayer_clicked()
-{
-  // EVALUATION 2
 
 
 }
@@ -850,3 +990,156 @@ void WindowClient::ConsultArticle(int Id)
     }
   }
 }
+
+//////////////:AFAIRE 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool WindowClient::VidePanier()
+{
+  char texte[300];
+  sprintf(texte,"CANCEL_ALL#%d", nbArticles);
+
+  int i = 0;
+
+  while(i < 10 && Caddie[i].id != 0)
+  {
+    char str[20];
+
+    strcat(texte, "#");
+
+    sprintf(str, "%d&%d", Caddie[i].id, Caddie[i].stock);
+
+    strcat(texte, str);
+
+    i++;
+  }
+  
+  int nbEcrits;
+
+  if ((nbEcrits = Send(sClient,texte,strlen(texte))) == -1)
+  {
+    perror("Erreur de Send");
+    exit(1);
+  }
+
+  printf("NbEcrits = %d\n",nbEcrits);
+  printf("Ecrit = --%s--\n",texte);
+
+  char buffer[100];
+  int nbLus;
+  
+  if ((nbLus = Receive(sClient,buffer)) < 0)
+  {
+      perror("Erreur de Receive");
+      exit(1);
+  }
+
+  printf("NbLus = %d\n",nbLus);
+  buffer[nbLus] = 0;
+  printf("Lu = --%s--\n",buffer);
+  
+  char *ptr = strtok(buffer,"#");
+
+  if (strcmp(ptr,"CANCEL_ALL") == 0) 
+  {
+    char reponse[20];
+    strcpy(reponse,strtok(NULL,"#"));
+
+    if (strcmp(reponse,"ko") == 0) 
+    {
+      dialogueErreur("Vider", "Vous n'avez rien dans votre panier !");
+    }
+    else
+    {
+      //mise a jour du panier
+
+      videTablePanier();
+
+      totalCaddie = 0.0;
+      setTotal(-1.0);
+
+      int i = 0;
+
+      while(i < nbArticles)
+      {
+        if(Caddie[i].id == articleCourant.id)
+        {
+          articleCourant.stock += Caddie[i].stock;
+          setArticle(articleCourant.intitule, articleCourant.prix, articleCourant.stock , articleCourant.image);
+        }
+
+        Caddie[i].id = 0;
+
+        i++;
+      }
+
+      nbArticles = 0;
+    }
+  }
+
+  return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void WindowClient::getCaddie()
+{
+  char texte[50];
+  sprintf(texte,"CADDIE#%d", numFacture);
+
+  int nbEcrits;
+
+  if ((nbEcrits = Send(sClient,texte,strlen(texte))) == -1)
+  {
+    perror("Erreur de Send");
+    exit(1);
+  }
+
+  printf("NbEcrits = %d\n",nbEcrits);
+  printf("Ecrit = --%s--\n",texte);
+
+  char buffer[100];
+  int nbLus;
+  
+  if ((nbLus = Receive(sClient,buffer)) < 0)
+  {
+      perror("Erreur de Receive");
+      exit(1);
+  }
+
+  printf("NbLus = %d\n",nbLus);
+
+  buffer[nbLus] = 0;
+
+  printf("Lu = --%s--\n",buffer);
+
+  char *ptr = strtok(buffer,"#");
+
+  if (strcmp(ptr,"CADDIE") == 0) 
+  {
+    nbArticles = atoi(strtok(NULL,"#"));
+
+    if(nbArticles > 0)
+    {
+      int i = 0;
+
+      while(i < nbArticles)
+      {
+        Caddie[i].id = atoi(strtok(NULL,"$"));
+        strcpy(Caddie[i].intitule,strtok(NULL,"$"));
+        Caddie[i].stock = atoi(strtok(NULL,"$"));
+        setlocale(LC_NUMERIC, "C");
+        Caddie[i].prix = atof(strtok(NULL,"#"));
+
+        ajouteArticleTablePanier(Caddie[i].intitule, Caddie[i].prix, Caddie[i].stock);
+        totalCaddie = totalCaddie + (Caddie[i].stock*Caddie[i].prix);
+
+        i++;
+      }
+
+      setTotal(totalCaddie);
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////

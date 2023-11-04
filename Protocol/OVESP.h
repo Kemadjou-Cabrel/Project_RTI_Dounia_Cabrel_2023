@@ -13,6 +13,8 @@ int OVESP_Login(const char* user,const char* password,MYSQL* connexion);
 
 int OVESP_NouveauLogin(const char* user,const char* password,MYSQL* connexion);
 
+int Verification(const char* user, MYSQL* connexion);
+
 void OVESP_Logout(int sock);
 
 void OVESP_Consult(int id, char* rep, MYSQL* connexion);
@@ -22,6 +24,20 @@ void OVESP_Achat(int id, char* rep, int quant, MYSQL* connexion);
 void OVESP_Cancel(int id, int quant, char* rep, MYSQL* connexion);
 
 void OVESP_Cancel_All(char *requete,int nbArti, char* rep, MYSQL* connexion);
+
+void OVESP_Ajout_Facture(int idFacture, int NEW_ARTICLE, float montant, int idArticle, int quant, MYSQL* connexion);
+
+void OVESP_Supprime_Facture(int idFacture, float montant, int idArticle, MYSQL* connexion);
+
+void OVESP_Supprime_ALL_Facture(int idFacture, MYSQL* connexion);
+
+void OVESP_Confirmer(int idFacture, MYSQL* connexion);
+
+void OVESP_Caddie(int idFacture, char* rep, MYSQL* connexion);
+
+void Verifie_Vente(int idFacture, int idArticle, char* reqReponse,MYSQL* connexion);
+
+
 
 void OVESP_Close();
 //-------------------------------------------------------------------------------------------------------------------------

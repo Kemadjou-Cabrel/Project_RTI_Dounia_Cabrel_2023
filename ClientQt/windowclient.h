@@ -46,6 +46,12 @@ public:
 
     //pour envoyer la requete consult au serveur
     void ConsultArticle(int Id);
+    
+    //pour vider le panier
+    bool VidePanier();
+
+    //pour recuperer le caddie dans le BD
+    void getCaddie();
 
 private slots:
     void on_pushButtonLogin_clicked();
