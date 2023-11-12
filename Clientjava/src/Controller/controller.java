@@ -6,9 +6,13 @@ import Modele.Article;
 import Modele.TCP;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.LinkedList;
+import java.util.Vector;
 
 public class controller
 {
@@ -19,6 +23,11 @@ public class controller
     private  TCP tcp;
     private boolean logged;
     private Article articleCourant;
+    private LinkedList<Article> Caddie;
+    private int nbArticles;
+    private int numFacture;
+
+    private float totalCaddie;
 
 
 
@@ -27,6 +36,14 @@ public class controller
         this.inter=inter;
 
         this.marc=marc;
+
+        numFacture = 0;
+
+        nbArticles = 0;
+
+        totalCaddie = 0.0F;
+
+        Caddie = new LinkedList<>();
 
         tcp = new TCP();
 
@@ -173,7 +190,7 @@ public  void login()
 
                     //numFacture = Integer.parseInt(parts[2]);
 
-                    //getCaddie();
+                    //getCaddie();a faire
 
                     ConsultArticle(1);
 
@@ -227,9 +244,9 @@ public  void login()
 
                 if ("ok".equals(reponse))
                 {
-                    //if(nbArticles > 0) {
-                   //     VidePanier();
-                   // }
+                    if(nbArticles > 0) {
+                        vide();
+                    }
 
                     JOptionPane.showMessageDialog(null, "Au Plaisir !!!! ;)", "LOGOUT", JOptionPane.INFORMATION_MESSAGE);
 
@@ -247,14 +264,14 @@ public  void login()
     public void Precedent()
     {
         System.out.println("precedent");
-        //ConsultArticle(articleCourant.getId() - 1);
+        ConsultArticle(articleCourant.getId() - 1);
 
     }
     public void Suivant()
     {
         System.out.println("Suivant");
 
-        //ConsultArticle(articleCourant.getId() + 1);
+        ConsultArticle(articleCourant.getId() + 1);
 
 
     }
@@ -280,13 +297,13 @@ public  void login()
             String command = parts[0];
 
             System.out.println(command);
-            if ("LOGOUT".equals(command))
+            if ("CONSULT".equals(command))
             {
                 String reponse = parts[1];
 
                 System.out.println(reponse);
 
-                if ("-1".equals(reponse))
+                if (!"-1".equals(reponse))
                 {
                     String intitule = parts[2];
                     int stock = Integer.parseInt(parts[3]);
@@ -310,32 +327,400 @@ public  void login()
         marc.getStock().setText(String.valueOf(stock));
         marc.getPrix().setText(String.valueOf(prix));
 
-        String filepath = "./images/" + image;
+        String filepath = "./Clientjava/images/" + image;
 
         ImageIcon imageIcon = new ImageIcon(filepath);
 
         marc.getPhoto().setIcon(imageIcon);
+
+
     }
     public void Acheter()
     {
         System.out.println("Acheter");
+
+        try {
+            int quantite = (int) marc.getQuantite().getValue();
+
+            if(quantite == 0)
+            {
+                throw new Exception("Veuillez sélectionner une valeur supérieure à 0");
+            }
+
+            int i = 0;
+
+            for (Article art: Caddie)
+            {
+                if(art.getId() == articleCourant.getId())
+                {
+                    break;
+                }
+
+                i++;
+
+
+            }
+
+            if(Caddie.size() == i)
+            {
+                i = 10;
+            }
+
+
+            System.out.println(i);
+
+            if(nbArticles == 10 && i == 10)
+            {
+                throw new Exception("votre panier est plein,");
+            }
+
+            String texte = "ACHAT#" + articleCourant.getId() + "#" + quantite;
+
+            System.out.println(texte);
+
+            int nbEcrits = tcp.Send(inter.getSocket(), texte);
+
+            System.out.println("NbEcrits = " + nbEcrits);
+
+            System.out.println("Ecrit = --" + texte + "--");
+
+            String response = tcp.Receive(inter.getSocket());
+
+            System.out.println("Lu = --" + response + "--");
+
+            String[] parts = response.split("#");
+
+            String command = parts[0];
+
+            System.out.println(command);
+            if ("ACHAT".equals(command))
+            {
+                int ID = Integer.parseInt(parts[1]);
+                if(ID != -1)
+                {
+
+                    int Stock = Integer.parseInt(parts[2]);
+
+                    if (Stock == 0)
+                        throw new Exception("stock insuffisant!");
+                    else
+                    {
+                        articleCourant.setStock(articleCourant.getStock() - quantite);
+
+                        marc.getStock().setText(String.valueOf(articleCourant.getStock()));
+
+                        if(i == 10)
+                        {
+                            Caddie.add(new Article(articleCourant.getId(), articleCourant.getIntitule(), articleCourant.getPrix(), quantite, articleCourant.getImage()));
+
+                            totalCaddie += (quantite*articleCourant.getPrix());
+
+                            marc.getTotal().setText(String.valueOf(totalCaddie));
+
+                            ajouteArticleTablePanier(articleCourant.getIntitule(), articleCourant.getPrix(), quantite);
+
+                            texte = "MISE_A_JOUR#" + numFacture + "#0#0#" + totalCaddie + "#" + articleCourant.getId() + "#" + quantite;
+
+                            System.out.println(texte);
+
+                            nbEcrits = tcp.Send(inter.getSocket(), texte);
+
+                            System.out.println("NbEcrits = " + nbEcrits);
+
+                            System.out.println("Ecrit = --" + texte + "--");
+
+                             response = tcp.Receive(inter.getSocket());
+
+                            System.out.println("Lu = --" + response + "--");
+
+                            nbArticles++;
+                        }
+                        else
+                        {
+                            Caddie.get(i).setStock(Caddie.get(i).getStock() + quantite);
+
+                            totalCaddie = 0.0F;
+
+                            for (Article art: Caddie) {
+                                totalCaddie += (art.getPrix()*art.getStock());
+                            }
+
+                            marc.getTotal().setText(String.valueOf(totalCaddie));
+
+                            DefaultTableModel modelArticles = (DefaultTableModel) marc.getTableau().getModel();
+
+                            modelArticles.setValueAt(Caddie.get(i).getStock(), i, 2);
+
+                            texte = "MISE_A_JOUR#" + numFacture + "#0#0#" + totalCaddie + "#" + articleCourant.getId() + "#" + quantite;
+
+                            System.out.println(texte);
+
+                            nbEcrits = tcp.Send(inter.getSocket(), texte);
+
+                            System.out.println("NbEcrits = " + nbEcrits);
+
+                            System.out.println("Ecrit = --" + texte + "--");
+
+                            response = tcp.Receive(inter.getSocket());
+
+                            System.out.println("Lu = --" + response + "--");
+
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception exception) {
+            JOptionPane.showMessageDialog(null, exception.getMessage(), "Achat", JOptionPane.ERROR_MESSAGE);
+        }
 
     }
     public void supprimer()
     {
         System.out.println("supprimer");
 
+        try {
+            int ind = marc.getTableau().getSelectedRow();
+
+            if(ind == -1)
+                throw new Exception("veuillez choisir une article pour la suppression");
+
+            String Requete = "CANCEL#" + Caddie.get(ind).getId() + "#" + Caddie.get(ind).getStock();
+
+            System.out.println(Requete);
+
+            int nbEcrits = tcp.Send(inter.getSocket(), Requete);
+
+            System.out.println("NbEcrits = " + nbEcrits);
+
+            System.out.println("Ecrit = --" + Requete + "--");
+
+            String response = tcp.Receive(inter.getSocket());
+
+            System.out.println("Lu = --" + response + "--");
+
+            String[] parts = response.split("#");
+
+            String command = parts[0];
+
+            System.out.println(command);
+            if ("CANCEL".equals(command))
+            {
+                int ID = Integer.parseInt(parts[1]);
+
+                if(ID != -1)
+                {
+                    if(articleCourant.getId() == ID)
+                    {
+                        articleCourant.setStock(Integer.parseInt(parts[2]));
+
+                        marc.getStock().setText(String.valueOf(articleCourant.getStock()));
+                    }
+
+                    Caddie.remove(ind);
+                    nbArticles--;
+
+                    DefaultTableModel modelArticles = (DefaultTableModel) marc.getTableau().getModel();
+
+                    modelArticles.removeRow(ind);
+
+                    totalCaddie = 0.0F;
+
+                    for (Article art: Caddie)
+                    {
+                        totalCaddie += (art.getPrix()*art.getStock());
+                    }
+
+                    marc.getTotal().setText(String.valueOf(totalCaddie));
+
+                    Requete = "UPDATE_CAD#" + numFacture + "#1#" + totalCaddie + "#" + articleCourant.getId();
+
+                    System.out.println(Requete);
+
+                    nbEcrits = tcp.Send(inter.getSocket(), Requete);
+
+                    System.out.println("NbEcrits = " + nbEcrits);
+
+                    System.out.println("Ecrit = --" + Requete + "--");
+
+                    response = tcp.Receive(inter.getSocket());
+
+                    System.out.println("Lu = --" + response + "--");
+                }
+            }
+        }
+        catch (Exception exception) {
+            JOptionPane.showMessageDialog(null, exception.getMessage(), "Supprimer", JOptionPane.ERROR_MESSAGE);
+        }
+
+
     }
     public void viderPanier()
     {
-        System.out.println("viderPanier");
+        vide();
+
+        ////mettre a jour le facture dans le BD
+        String Requete = "DELETE_CAD#" + numFacture;
+
+        System.out.println(Requete);
+        try {
 
 
+            int nbEcrits = tcp.Send(inter.getSocket(), Requete);
+
+            System.out.println("NbEcrits = " + nbEcrits);
+
+            System.out.println("Ecrit = --" + Requete + "--");
+
+            String response = tcp.Receive(inter.getSocket());
+
+            System.out.println("Lu = --" + response + "--");
+        }
+        catch (Exception exception) {
+            JOptionPane.showMessageDialog(null, exception.getMessage(), "Vider", JOptionPane.ERROR_MESSAGE);
+        }
+
+
+
+    }
+
+
+
+
+    public Boolean vide()
+    {
+        try {
+            String Requete = "CANCEL_ALL#" + nbArticles;
+
+            for (Article art:Caddie) {
+                Requete += "#" + art.getId() + "&" + art.getStock();
+            }
+
+            System.out.println(Requete);
+
+            int nbEcrits = tcp.Send(inter.getSocket(), Requete);
+
+            System.out.println("NbEcrits = " + nbEcrits);
+
+            System.out.println("Ecrit = --" + Requete + "--");
+
+            String response = tcp.Receive(inter.getSocket());
+
+            System.out.println("Lu = --" + response + "--");
+
+            String[] parts = response.split("#");
+
+            String command = parts[0];
+
+            System.out.println(command);
+
+            if ("CANCEL_ALL".equals(command))
+            {
+                if(parts[1].equals("ko"))
+                    throw new Exception("Vous n'avez rien dans votre panier !");
+
+                totalCaddie = 0.0F;
+
+                marc.getTotal().setText(null);
+
+                DefaultTableModel modelArticles = (DefaultTableModel) marc.getTableau().getModel();
+
+                int rowCount = modelArticles.getRowCount();
+
+                for (int i = rowCount - 1; i >= 0; i--) {
+                    modelArticles.removeRow(i);
+                }
+
+                for (Article art: Caddie) {
+                    if(art.getId() == articleCourant.getId())
+                    {
+                        articleCourant.setStock(articleCourant.getStock()+art.getStock());
+                        marc.getStock().setText(String.valueOf(articleCourant.getStock()));
+                        break;
+                    }
+                }
+
+                Caddie = new LinkedList<>();
+
+                nbArticles = 0;
+            }
+        }
+        catch (Exception exception) {
+            JOptionPane.showMessageDialog(null, exception.getMessage(), "Vider", JOptionPane.ERROR_MESSAGE);
+        }
+        return true;
     }
     public void confirmerAchat()
     {
         System.out.println("confirmerAchat");
 
+        try
+        {
+            if(nbArticles == 0)
+                throw new Exception("Votre panier est vide !");
+
+            String Requete = "CONFIRMER#" + numFacture + "#" + marc.getNom().getText();
+
+            System.out.println(Requete);
+
+            int nbEcrits = tcp.Send(inter.getSocket(), Requete);
+
+            System.out.println("NbEcrits = " + nbEcrits);
+
+            System.out.println("Ecrit = --" + Requete + "--");
+
+            String response = tcp.Receive(inter.getSocket());
+
+            System.out.println("Lu = --" + response + "--");
+
+            String[] parts = response.split("#");
+
+            String command = parts[0];
+
+            System.out.println(command);
+            if ("CONFIRME".equals(command))
+            {
+                if(parts[1].equals("-1"))
+                    throw new Exception("Un problème est survenu lors de l'obtention de votre numéro de reçu, mais votre commande a été confirmée !");
+                else
+                {
+                    totalCaddie = 0.0F;
+
+                    marc.getPrix().setText(null);
+
+                    DefaultTableModel modelArticles = (DefaultTableModel) marc.getTableau().getModel();
+
+                    int rowCount = modelArticles.getRowCount();
+
+                    for (int i = rowCount - 1; i >= 0; i--) {
+                        modelArticles.removeRow(i);
+                    }
+
+                    Caddie = new LinkedList<>();
+
+                    nbArticles = 0;
+
+                    numFacture = Integer.parseInt(parts[1]);
+
+                    JOptionPane.showMessageDialog(null, "Achat confirmer!", "Payer", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        }
+        catch (Exception exception) {
+            JOptionPane.showMessageDialog(null, exception.getMessage(), "Payer", JOptionPane.ERROR_MESSAGE);
+        }
+
+    }
+    private void ajouteArticleTablePanier(String intitule, float prix, int stock)
+    {
+        DefaultTableModel modelArticles = (DefaultTableModel) marc.getTableau().getModel();
+
+        Vector ligne = new Vector();
+        ligne.add(intitule);
+        ligne.add(prix);
+        ligne.add(stock);
+
+        modelArticles.addRow(ligne);
     }
 
 

@@ -9,7 +9,10 @@ import java.awt.event.ActionListener;
 import java.net.Socket;
 
 public class marche extends JFrame {
+
+
     public JTable tableau;
+
     private JButton supprimerArticleButton;
     private JButton confirmerAchatButton;
     private JButton viderLePanierButton;
@@ -33,6 +36,7 @@ public class marche extends JFrame {
 
 
 
+
     public marche(Interface inter)
     {
 
@@ -48,6 +52,7 @@ public class marche extends JFrame {
         tableModelEmp.setColumnIdentifiers(nomsColonnes);
         table.setViewportView(tableau);
         ButtonDesactive();
+
 
 
         ///------------------------------------------------Different action des boutons de notre maraicher--------------------------------------------------------
@@ -140,16 +145,29 @@ public class marche extends JFrame {
     public JTextField getArticle() {
         return Article;
     }
+
     public JTextField getPrix() {
         return Prix;
     }
+
     public JTextField getStock() {
         return Stock;
     }
+
     public JLabel getPhoto() {
         return photo;
     }
 
+    public JSpinner getQuantite() {
+        return Quantite;
+    }
+    public JTable getTableau() {
+        return tableau;
+    }
+
+    public JTextField getTotal() {
+        return Total;
+    }
 
 
 

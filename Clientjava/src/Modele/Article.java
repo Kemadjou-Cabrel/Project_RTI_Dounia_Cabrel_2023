@@ -1,7 +1,7 @@
 package Modele;
 
 public class Article {
-    private int   id;
+    private int  id;
     private String  intitule;
     private float prix;
     private int   stock;
