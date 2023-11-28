@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.LinkedList;
+import java.util.StringTokenizer;
 import java.util.Vector;
 
 public class controller
@@ -186,11 +187,9 @@ public  void login()
                     JOptionPane.showMessageDialog(null, "Connecter avec succés!!!", "Login", JOptionPane.INFORMATION_MESSAGE);
                     marc.ButtonActive();
 
-                    logged = true;
+                    numFacture = Integer.parseInt(parts[2]);
 
-                    //numFacture = Integer.parseInt(parts[2]);
-
-                    //getCaddie();a faire
+                    getCaddie();
 
                     ConsultArticle(1);
 
@@ -252,7 +251,7 @@ public  void login()
 
                     marc.ButtonDesactive();
 
-                    logged = false;/// faire la fenttre
+
                 }
             }
         }
@@ -533,7 +532,7 @@ public  void login()
 
                     marc.getTotal().setText(String.valueOf(totalCaddie));
 
-                    Requete = "UPDATE_CAD#" + numFacture + "#1#" + totalCaddie + "#" + articleCourant.getId();
+                    Requete = "MISE_A_JOUR#" + numFacture + "#1#" + totalCaddie + "#" + articleCourant.getId();
 
                     System.out.println(Requete);
 
@@ -560,7 +559,7 @@ public  void login()
         vide();
 
         ////mettre a jour le facture dans le BD
-        String Requete = "DELETE_CAD#" + numFacture;
+        String Requete = "SUPPRIME_CADDIE#" + numFacture;
 
         System.out.println(Requete);
         try {
@@ -587,7 +586,7 @@ public  void login()
 
 
 
-    public Boolean vide()
+    public void vide()
     {
         try {
             String Requete = "CANCEL_ALL#" + nbArticles;
@@ -648,7 +647,6 @@ public  void login()
         catch (Exception exception) {
             JOptionPane.showMessageDialog(null, exception.getMessage(), "Vider", JOptionPane.ERROR_MESSAGE);
         }
-        return true;
     }
     public void confirmerAchat()
     {
@@ -681,7 +679,7 @@ public  void login()
             if ("CONFIRME".equals(command))
             {
                 if(parts[1].equals("-1"))
-                    throw new Exception("Un problème est survenu lors de l'obtention de votre numéro de reçu, mais votre commande a été confirmée !");
+                    throw new Exception("erreur");
                 else
                 {
                     totalCaddie = 0.0F;
@@ -711,6 +709,66 @@ public  void login()
         }
 
     }
+    public void getCaddie()
+    {
+        try
+        {
+
+            String Requete = "CADDIE#" + numFacture;
+
+            System.out.println(Requete);
+
+            int nbEcrits = tcp.Send(inter.getSocket(), Requete);
+
+            System.out.println("NbEcrits = " + nbEcrits);
+
+            System.out.println("Ecrit = --" + Requete + "--");
+
+            String response = tcp.Receive(inter.getSocket());
+
+            System.out.println("Lu = --" + response + "--");
+
+            StringTokenizer tokenizer = new StringTokenizer(response, "#");
+            String ptr = tokenizer.nextToken();
+
+            if (ptr.equals("CADDIE")) {
+                nbArticles = Integer.parseInt(tokenizer.nextToken());
+
+                if (nbArticles > 0) {
+                    int i = 0;
+
+                    while (i < nbArticles) {
+
+
+                        StringTokenizer itemTokenizer = new StringTokenizer(tokenizer.nextToken(), "$");
+
+                        int id = Integer.parseInt(itemTokenizer.nextToken());
+                        String intitule = itemTokenizer.nextToken();
+                        int stock = Integer.parseInt(itemTokenizer.nextToken());
+                        float prix = Float.parseFloat(itemTokenizer.nextToken());
+
+                        Article art = new Article(id, intitule, prix, stock, "");
+
+                        Caddie.add(art);
+
+                        ajouteArticleTablePanier(intitule, prix, stock);
+
+                        totalCaddie += (stock * prix);
+
+                        i++;
+                    }
+
+                    marc.getTotal().setText(String.valueOf(totalCaddie));
+                    System.out.println("cabrel");
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            JOptionPane.showMessageDialog(null, exception.getMessage(), "recuperation caddie", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void ajouteArticleTablePanier(String intitule, float prix, int stock)
     {
         DefaultTableModel modelArticles = (DefaultTableModel) marc.getTableau().getModel();

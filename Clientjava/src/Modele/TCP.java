@@ -10,11 +10,6 @@ public class TCP {
     {
         tailleMax = 10000;
     }
-
-
-
-
-
     public Socket ClientSocket(String IpServeur, int PortServeur) throws IOException
     {
         Socket csocket;
