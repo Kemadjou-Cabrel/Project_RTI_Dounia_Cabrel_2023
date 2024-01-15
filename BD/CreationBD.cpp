@@ -42,14 +42,12 @@ int main(int argc,char *argv[])
 {
   // Connection a MySql
   printf("Connection a la BD...\n");
-
   MYSQL* connexion = mysql_init(NULL);
-
   mysql_real_connect(connexion,"localhost","Student","PassStudent1_","PourStudent",0,0,0);
 
   // Creation d'une table articles
   printf("Creation de la table articles...\n");
-  mysql_query(connexion,"drop table if exists articles;"); // au cas ou elle existerait deja
+  mysql_query(connexion,"drop table articles;"); // au cas ou elle existerait deja
   mysql_query(connexion,"create table articles (id INT(4) auto_increment primary key, intitule varchar(20),prix FLOAT(4),stock INT(4),image varchar(20));");
 
   // Ajout de tuples dans la table articles
@@ -57,23 +55,21 @@ int main(int argc,char *argv[])
   char requete[256];
   for (int i=0 ; i<21 ; i++)
   {
-	  sprintf(requete,"insert into articles values (NULL,'%s',%f,%d,'%s');",Elm[i].intitule,Elm[i].prix,Elm[i].stock,Elm[i].image);
-	  mysql_query(connexion,requete);
+    sprintf(requete,"insert into articles values (NULL,'%s',%f,%d,'%s');",Elm[i].intitule,Elm[i].prix,Elm[i].stock,Elm[i].image);
+    mysql_query(connexion,requete);
   }
 
-  //Creation d'une table utilisateurs
-  printf("Creation de la table utilisateurs...\n");
-  mysql_query(connexion,"drop table if exists utilisateurs;"); // au cas ou elle existerait deja
-  mysql_query(connexion,"create table utilisateurs (login varchar(50), MDP varchar(50));");
+  //Creation d'une table clients
+  printf("Creation de la table clients...\n");
+  mysql_query(connexion,"drop table clients;"); // au cas ou elle existerait deja
+  mysql_query(connexion,"create table clients (id INT(4) auto_increment primary key, login varchar(50), password varchar(50));");
 
-  // Ajout de tuples dans la table utilisateurs
-  printf("Ajout d'utilisateurs dans la table...\n");
-
-  sprintf(requete,"insert into utilisateurs values ('%s','%s');", "TEST", "1234567");
-
+  // Ajout de tuples dans la table clients
+  printf("Ajout d'clients dans la table...\n");
+  sprintf(requete,"insert into clients (login, password) values ('%s','%s');", "TEST", "1234567");
   mysql_query(connexion,requete);
-  
-    // Creation d'une table factures
+
+  // Creation d'une table factures
   printf("Creation de la table factures...\n");
   mysql_query(connexion,"drop table factures;"); // au cas ou elle existerait deja
   mysql_query(connexion,"create table factures (idFacture INT(4) auto_increment primary key, idClient INT(4), dateFacture DATE, montant FLOAT, paye INT);");
@@ -82,11 +78,6 @@ int main(int argc,char *argv[])
   printf("Creation de la table ventes...\n");
   mysql_query(connexion,"drop table ventes;"); // au cas ou elle existerait deja
   mysql_query(connexion,"create table ventes (idFacture INT(4), idArticle INT(4), quantite INT);");
-  
-  // Ajout de clés étrangères
-  printf("Ajout de clés étrangères...\n");
-  mysql_query(connexion, "ALTER TABLE factures ADD FOREIGN KEY (idClient) REFERENCES clients(id);");
-
 
   // Deconnection de la BD
   mysql_close(connexion);

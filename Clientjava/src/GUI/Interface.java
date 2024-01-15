@@ -14,8 +14,6 @@ public class Interface extends JFrame {
     private  JButton connecterButton;
     private JPanel Connection;
 
-
-
     public Socket socket;
 
     public Interface()
@@ -25,13 +23,7 @@ public class Interface extends JFrame {
         setTitle("Interface de connection ");
         setContentPane(Connection);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-
-
         controller controller =new controller(this,null);
-
-
-
 
         connecterButton.addActionListener(new ActionListener() {
             @Override

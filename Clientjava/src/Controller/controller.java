@@ -56,7 +56,7 @@ public class controller
 
 
         try {
-            // Récupérer l'adresse IP et le port à partir des champs de texte
+            // Récupérer l'adresse IP et le port
 
             String ipAdresse = inter.getAdresse().getText();
 
@@ -66,7 +66,6 @@ public class controller
 
             System.out.println(portTexte);
 
-            // Vérifier si l'adresse IP contient uniquement des chiffres et des points
             if(ipAdresse.isEmpty())
             {
                 throw new Exception("Veuillez remplir le champ adresse");
@@ -76,7 +75,6 @@ public class controller
             {
                 throw new Exception("Votre adresse doit etre sous format 0.0.0.0.0");
             }
-
 
             if(portTexte.isEmpty())
             {
@@ -92,24 +90,21 @@ public class controller
 
             // Créer une connexion au serveur
             socket = tcp.ClientSocket(ipAdresse, port);
+
             System.out.println("cabrel"+socket);
 
-            // Afficher un message de connexion réussie
             JOptionPane.showMessageDialog(null, "Connection au Serveur reussi!!!", "Connexion", JOptionPane.INFORMATION_MESSAGE);
-
-            // Créer et afficher la fenêtre principale de l'application
 
             marche marche = new marche(inter);
             marche.setVisible(true);
 
             // Masquer la fenêtre de connexion
             inter.setVisible(false);
-            // Effectuer d'autres actions après la connexion (PasLogger() dans votre code)
+
             marche.ButtonDesactive();
         }
         catch (Exception exception)
         {
-            // Afficher un message d'erreur en cas d'échec de la connexion
             JOptionPane.showMessageDialog(null, exception.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
         }
         return socket;
@@ -188,12 +183,11 @@ public  void login()
                     marc.ButtonActive();
 
                     numFacture = Integer.parseInt(parts[2]);
+                    System.out.println("Numero de facture: " + numFacture);
 
                     getCaddie();
 
                     ConsultArticle(1);
-
-
 
                 }else
                 {
@@ -321,7 +315,7 @@ public  void login()
     }
     private void setArticle(String intitule, float prix, int stock, String image)
     {
-        // initialisation des articles
+        // initialisation des articles et affichage
         marc.getArticle().setText(intitule);
         marc.getStock().setText(String.valueOf(stock));
         marc.getPrix().setText(String.valueOf(prix));
@@ -418,7 +412,7 @@ public  void login()
 
                             ajouteArticleTablePanier(articleCourant.getIntitule(), articleCourant.getPrix(), quantite);
 
-                            texte = "MISE_A_JOUR#" + numFacture + "#0#0#" + totalCaddie + "#" + articleCourant.getId() + "#" + quantite;
+                            texte = "UPDATE_CAD#" + numFacture + "#0#0#" + totalCaddie + "#" + articleCourant.getId() + "#" + quantite;
 
                             System.out.println(texte);
 
@@ -450,7 +444,7 @@ public  void login()
 
                             modelArticles.setValueAt(Caddie.get(i).getStock(), i, 2);
 
-                            texte = "MISE_A_JOUR#" + numFacture + "#0#0#" + totalCaddie + "#" + articleCourant.getId() + "#" + quantite;
+                            texte = "UPDATE_CAD#" + numFacture + "#0#0#" + totalCaddie + "#" + articleCourant.getId() + "#" + quantite;
 
                             System.out.println(texte);
 
@@ -532,7 +526,7 @@ public  void login()
 
                     marc.getTotal().setText(String.valueOf(totalCaddie));
 
-                    Requete = "MISE_A_JOUR#" + numFacture + "#1#" + totalCaddie + "#" + articleCourant.getId();
+                    Requete = "UPDATE_CAD#" + numFacture + "#1#" + totalCaddie + "#" + articleCourant.getId();
 
                     System.out.println(Requete);
 
@@ -559,7 +553,7 @@ public  void login()
         vide();
 
         ////mettre a jour le facture dans le BD
-        String Requete = "SUPPRIME_CADDIE#" + numFacture;
+        String Requete = "DELETE_CAD#" + numFacture;
 
         System.out.println(Requete);
         try {
@@ -676,7 +670,7 @@ public  void login()
             String command = parts[0];
 
             System.out.println(command);
-            if ("CONFIRME".equals(command))
+            if ("CONFIRMER".equals(command))
             {
                 if(parts[1].equals("-1"))
                     throw new Exception("erreur");
@@ -684,7 +678,7 @@ public  void login()
                 {
                     totalCaddie = 0.0F;
 
-                    marc.getPrix().setText(null);
+                    marc.getTotal().setText(null);
 
                     DefaultTableModel modelArticles = (DefaultTableModel) marc.getTableau().getModel();
 

@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/Paiement/Paiement.iml" filepath="$PROJECT_DIR$/Paiement/Paiement.iml" />
-      <module fileurl="file://$PROJECT_DIR$/Project_RTI_Dounia_Cabrel_2023.iml" filepath="$PROJECT_DIR$/Project_RTI_Dounia_Cabrel_2023.iml" />
+      <module fileurl="file://$PROJECT_DIR$/JavaClient/JavaClient.iml" filepath="$PROJECT_DIR$/JavaClient/JavaClient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Partie_Paiement/Partie_Paiement.iml" filepath="$PROJECT_DIR$/Partie_Paiement/Partie_Paiement.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Projet_RTI_2023-2024-mainca.iml" filepath="$PROJECT_DIR$/.idea/Projet_RTI_2023-2024-mainca.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SiteWebMaraicher/SiteWebMaraicher.iml" filepath="$PROJECT_DIR$/SiteWebMaraicher/SiteWebMaraicher.iml" />
     </modules>
   </component>
 </project>
